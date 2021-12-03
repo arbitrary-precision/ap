@@ -18,12 +18,6 @@
 #define AP_SIZE unsigned
 #endif
 
-// Runtime assertion.
-
-#ifndef AP_USE_ASSERT
-#define AP_NO_ASSERT
-#endif
-
 // Linkage.
 
 #ifndef AP_USE_SOURCES
@@ -46,24 +40,6 @@
 static_assert(AP_WORD_SIZE * 2 == AP_DWORD_SIZE);
 static_assert(sizeof(AP_WORD) == AP_WORD_SIZE);
 static_assert(sizeof(AP_DWORD) == AP_DWORD_SIZE);
-
-// Debug.
-
-#ifndef AP_NO_ASSERT
-#include <exception>
-#define AP_ASSERT(cond, ...)                                         \
-    do                                                               \
-    {                                                                \
-        if (!(cond))                                                 \
-        {                                                            \
-            char buf[1024];                                          \
-            sprintf(buf, __VA_ARGS__);                               \
-            throw std::runtime_error{static_cast<const char*>(buf)}; \
-        }                                                            \
-    } while (0)
-#else
-#define AP_ASSERT(cond, ...)
-#endif
 
 // Linkage.
 

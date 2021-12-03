@@ -52,7 +52,7 @@ ap_linkage cmpres asm_cmp(const rregister& left, const rregister& right);
 // Preconditions: None
 ap_linkage index_t asm_trim(const word_t* const words, index_t size);
 
-// Adjust size of inout to ensure that inout.words[0, inout.size) contains no leading zeros.
+// Adjust inout.size to ensure that inout.words[0, inout.size) contains no leading zeros.
 // Return: None.
 // Change:
 // inout.size adjusted accordingly.
@@ -115,10 +115,10 @@ ap_linkage void asm_sub(const rregister& left, const rregister& right, wregister
 // out.size = MIN(left.size + 1, out.capacity).
 // out.words contains untrimmed wrapped two's complement pattern of (left * right + out).
 // Preconditions:
-// right in [0, word_traits::ones]
-// right.size in [0, left.size].
+// right in [0, word_traits::ones].
+// out.size in [0, left.size].
 // left.size in [0, out.capacity].
-ap_linkage dword_t asm_mul(const rregister& left, dword_t right, wregister& out);
+ap_linkage dword_t asm_mul_short(const rregister& left, dword_t right, wregister& out);
 
 // Word-wise wrapping long-long multiplication left by right.
 // Return: Carry of the operation, if overflow occured.
@@ -128,11 +128,10 @@ ap_linkage dword_t asm_mul(const rregister& left, dword_t right, wregister& out)
 // out.words contains untrimmed wrapped two's complement pattern of (left * right).
 // Preconditions:
 // Trimmed operands.
-// &left != &out
-// &right != &out
-// right.size > 0.
-// right.size in [0, left.size].
-// left.size in [0, out.capacity].
+// left.words != out.words
+// right.words != out.words
+// right.size in [1, left.size].
+// left.size in [1, out.capacity].
 ap_linkage dword_t asm_mul(const rregister& left, const rregister& right, wregister& out);
 
 // Long-short division left by right.
@@ -144,8 +143,8 @@ ap_linkage dword_t asm_mul(const rregister& left, const rregister& right, wregis
 // rem.words contains untrimmed two's complement pattern of (left % right).
 // Preconditions:
 // right in [1, word_traits::ones].
-// left.size in [0, out.capacity].
-ap_linkage void asm_div(const rregister& left, dword_t right, wregister& quo, wregister& rem);
+// left.size in [1, out.capacity].
+ap_linkage void asm_div_short(const rregister& left, dword_t right, wregister& quo, wregister& rem);
 
 // Long-long division left by right.
 // Return: None.

@@ -8,6 +8,10 @@
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
+#define LLU(a) static_cast<unsigned long long>(a)
+
+#define UNUSED(a) (void)a;
+
 namespace ap
 {
 namespace library
@@ -20,17 +24,75 @@ using index_t = AP_SIZE;
 template <typename T>
 struct integer_traits
 {
-    static constexpr std::size_t bytes = sizeof(T);
-    static constexpr std::size_t bits = bytes * CHAR_BIT;
-    static constexpr T zeros = 0;
-    static constexpr T ones = ~T{zeros};
-    static constexpr T nmsb = ones >> 1;
-    static constexpr T msb = ~nmsb;
+    enum : index_t
+    {
+        bytes = sizeof(T),
+        bits = sizeof(T) * CHAR_BIT
+    };
+
+    enum : T
+    {
+        zeros = 0,
+        ones = T(~zeros),
+        nmsb = T(ones >> 1),
+        msb = T(~nmsb)
+    };
 };
 
 using word_traits = integer_traits<word_t>;
 using dword_traits = integer_traits<dword_t>;
 using index_traits = integer_traits<index_t>;
+
+// Data register.
+template <typename _Words>
+struct dregister
+{
+public:
+    _Words words;
+    index_t capacity : index_traits::bits / 2 - 1;
+    index_t size : index_traits::bits / 2 - 1;
+    index_t sign : 1;
+
+private:
+    index_t __unused : 1;
+
+public:
+    dregister() : dregister(nullptr, 0, 0, false) {}
+
+    dregister(_Words _words, index_t _capacity, index_t _size, bool _sign)
+        : words(_words),
+          capacity(_capacity),
+          size(_size),
+          sign(_sign) {}
+
+    dregister(const dregister&) = default;
+    dregister& operator=(const dregister&) = default;
+
+    dregister(dregister&&) = default;
+    dregister& operator=(dregister&&) = default;
+
+    explicit operator dregister<const word_t*>() const
+    {
+        return dregister<const word_t*>{
+            this->words,
+            this->capacity,
+            this->size,
+            this->sign};
+    }
+
+    bool has_msb() const
+    {
+        return (this->capacity == this->size) && (this->words[this->capacity - 1] >> (word_traits::bits - 1));
+    }
+
+    void clear_msb()
+    {
+        this->words[this->capacity - 1] &= (word_traits::ones >> 1);
+    }
+};
+
+using rregister = dregister<const word_t*>;
+using wregister = dregister<word_t*>;
 
 // Flag register.
 struct fregister
@@ -136,66 +198,15 @@ public:
         return this->value == 0;
     }
 
-    enum
+    enum : index_t
     {
         noneflag = 0,
-        infinity = 1 << 1,
-        overflow = 1 << 2,
-        wrapping = 1 << 3,
-        signflip = 1 << 4
+        infinity = 1 << 0,
+        overflow = 1 << 1,
+        wrapping = 1 << 2,
+        signflip = 1 << 3
     };
 };
-
-// Data register.
-template <typename _Words>
-struct dregister
-{
-public:
-    _Words words;
-    index_t capacity : index_traits::bits / 2 - 1;
-    index_t size : index_traits::bits / 2 - 1;
-    index_t sign : 1;
-
-private:
-    index_t __unused : 1;
-
-public:
-    dregister() : dregister(nullptr, 0, 0, false) {}
-
-    dregister(_Words _words, index_t _capacity, index_t _size, bool _sign)
-        : words(_words),
-          capacity(_capacity),
-          size(_size),
-          sign(_sign) {}
-
-    dregister(const dregister&) = default;
-    dregister& operator=(const dregister&) = default;
-
-    dregister(dregister&&) = default;
-    dregister& operator=(dregister&&) = default;
-
-    explicit operator dregister<const word_t*>() const
-    {
-        return dregister<const word_t*>{
-            this->words,
-            this->capacity,
-            this->size,
-            this->sign};
-    }
-
-    bool has_msb() const
-    {
-        return (this->capacity == this->size) && (this->words[this->capacity - 1] >> (word_traits::bits - 1));
-    }
-
-    void clear_msb()
-    {
-        this->words[this->capacity - 1] &= (word_traits::ones >> 1);
-    }
-};
-
-using rregister = dregister<const word_t*>;
-using wregister = dregister<word_t*>;
 
 } // namespace library
 } // namespace ap

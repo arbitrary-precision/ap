@@ -4,6 +4,7 @@
 #if (DEOHAYER_AP_ASM_CPP == 1) == defined(AP_USE_SOURCES)
 
 #include "asm.hpp"
+#include <iostream>
 
 namespace ap
 {
@@ -132,7 +133,7 @@ void asm_sub(const rregister& left, const rregister& right, wregister& out)
     out.size = i;
 }
 
-dword_t asm_mul(const rregister& left, dword_t right, wregister& out)
+dword_t asm_mul_short(const rregister& left, dword_t right, wregister& out)
 {
     const index_t stop_index = MIN(left.size, out.capacity);
     dword_t carry = 0;
@@ -174,7 +175,7 @@ dword_t asm_mul(const rregister& left, const rregister& right, wregister& out)
     out_tmp.size = 0;
     for (index_t i = 0; i < right.size; ++i)
     {
-        carry += asm_mul(left, right.words[i], out_tmp);
+        carry += asm_mul_short(left, right.words[i], out_tmp);
         ++out_tmp.words;
         --out_tmp.capacity;
         --out_tmp.size;
@@ -183,22 +184,13 @@ dword_t asm_mul(const rregister& left, const rregister& right, wregister& out)
     return carry;
 }
 
-void asm_div(const rregister& left, dword_t right, wregister& quo, wregister& rem)
+void asm_div_short(const rregister& left, dword_t right, wregister& quo, wregister& rem)
 {
     index_t i = left.size - 1;
-    dword_t carry;
 
-    if (left.words[i] < right)
-    {
-        quo.size = i;
-        carry = left.words[i];
-    }
-    else
-    {
-        quo.size = left.size;
-        carry = left.words[i] % right;
-        quo.words[i] = left.words[i] / right;
-    }
+    dword_t carry = left.words[i] % right;
+    quo.words[i] = left.words[i] / right;
+    quo.size = left.size;
 
     while (i > 0)
     {
@@ -221,7 +213,7 @@ void asm_div(const rregister& left, const rregister& right, wregister& quo, wreg
     // Normalize dividend (left).
     auto nleft_digits = array_alloc<word_t>(left.size + 1);
     wregister nleft{nleft_digits.get(), index_t(left.size + 1), 0, false};
-    asm_mul(left, normalizer, nleft);
+    asm_mul_short(left, normalizer, nleft);
     dword_t u2 = 0;
     dword_t u1 = 0;
     dword_t u0 = 0;
@@ -229,7 +221,7 @@ void asm_div(const rregister& left, const rregister& right, wregister& quo, wreg
     // Normalize divisor (right).
     auto nright_digits = array_alloc<word_t>(right.size);
     wregister nright{nright_digits.get(), right.size, 0, false};
-    asm_mul(right, normalizer, nright);
+    asm_mul_short(right, normalizer, nright);
     const dword_t v1 = nright.words[nright.size - 1];
     const dword_t v0 = nright.words[nright.size - 2];
 
@@ -244,7 +236,7 @@ void asm_div(const rregister& left, const rregister& right, wregister& quo, wreg
     dword_t carry = 0;  // Used in multiply-subtract part of single-word division.
     dword_t borrow = 0; // Used in multiply-subtract part of single-word division.
 
-    for (size_t j = size_diff; j > 0;)
+    for (j = size_diff; j > 0;)
     {
         --j;
         i = j + nright.size;
@@ -310,7 +302,7 @@ void asm_div(const rregister& left, const rregister& right, wregister& quo, wreg
     nleft.size = i;
     if (nleft.size != 0)
     {
-        asm_div(rregister(nleft), normalizer, rem, nright);
+        asm_div_short(rregister(nleft), normalizer, rem, nright);
     }
 }
 
