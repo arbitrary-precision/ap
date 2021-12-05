@@ -4,7 +4,6 @@
 #if (DEOHAYER_AP_ASM_CPP == 1) == defined(AP_USE_SOURCES)
 
 #include "asm.hpp"
-#include <iostream>
 
 namespace ap
 {
@@ -190,14 +189,17 @@ void asm_div_short(const rregister& left, dword_t right, wregister& quo, wregist
 
     dword_t carry = left.words[i] % right;
     quo.words[i] = left.words[i] / right;
-    quo.size = left.size;
+    quo.size = MIN(left.size, quo.capacity);
 
     while (i > 0)
     {
         --i;
         carry <<= word_traits::bits;
         carry |= left.words[i];
-        quo.words[i] = carry / right;
+        if (i < quo.capacity)
+        {
+            quo.words[i] = carry / right;
+        }
         carry %= right;
     }
     rem.words[0] = carry;
@@ -296,9 +298,12 @@ void asm_div(const rregister& left, const rregister& right, wregister& quo, wreg
                 nleft.words[i] -= borrow;
             }
         }
-        quo.words[j] = q;
+        if (j < quo.capacity)
+        {
+            quo.words[j] = q;
+        }
     }
-    quo.size = size_diff;
+    quo.size = MIN(size_diff, quo.capacity);
     nleft.size = i;
     if (nleft.size != 0)
     {
@@ -375,8 +380,15 @@ void asm_rsh(const rregister& in, index_t shift, wregister& out)
         out.words[i - 1] = (dword >> shift);
         dword >>= word_traits::bits;
     }
-    out.words[in.size - 1] = (dword >> shift);
-    out.size = in.size;
+    if (out.capacity >= in.size)
+    {
+        out.words[in.size - 1] = (dword >> shift);
+        out.size = in.size;
+    }
+    else
+    {
+        out.size = in.size - 1;
+    }
 }
 
 void asm_lsh(const rregister& in, index_t shift, wregister& out)

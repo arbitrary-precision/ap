@@ -202,9 +202,7 @@ public:
     {
         noneflag = 0,
         infinity = 1 << 0,
-        overflow = 1 << 1,
-        wrapping = 1 << 2,
-        signflip = 1 << 3
+        overflow = 1 << 1
     };
 };
 

@@ -15,7 +15,6 @@ template <index_t _Maxbits, index_t _Minbits = 0>
 class int_handle
 {
     static_assert(_Minbits <= _Maxbits, "int_handle: _Minbits must not be greater than _Maxbits.");
-    static_assert(_Maxbits > 0, "int_handle: _Maxbits must be greater than 0.");
 
     template <index_t _MaxbitsO, index_t _MinbitsO>
     friend class int_handle;
@@ -27,7 +26,7 @@ private:
 public:
     enum : index_t
     {
-        maxbits = AP_ALIGN(_Maxbits, word_traits::bits),
+        maxbits = AP_ALIGN((_Maxbits != 0) ? _Maxbits : (index_t{1} << (index_traits::bits / 2)) - 1, word_traits::bits),
         minbits = AP_ALIGN((_Minbits != 0) ? _Minbits : _Maxbits, word_traits::bits),
         maxwords = maxbits / word_traits::bits,
         minwords = minbits / word_traits::bits,
