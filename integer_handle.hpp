@@ -8,77 +8,88 @@ namespace ap
 namespace library
 {
 
-#define AP_CAPACITY(expr) MAX(MIN(expr, maxwords), minwords)
 #define AP_ALIGN(val, a) ((((val) + a - 1) / a) * a)
 
-template <index_t _Maxbits, index_t _Minbits = 0>
-class int_handle
+template <index_t _Maxbits>
+class integer_handle
 {
-    static_assert(_Minbits <= _Maxbits, "int_handle: _Minbits must not be greater than _Maxbits.");
-
-    template <index_t _MaxbitsO, index_t _MinbitsO>
-    friend class int_handle;
-
-private:
-    array<word_t> words;
-    wregister reg;
+    template <index_t _MaxbitsO>
+    friend class integer_handle;
 
 public:
     enum : index_t
     {
         maxbits = AP_ALIGN((_Maxbits != 0) ? _Maxbits : (index_t{1} << (index_traits::bits / 2)) - 1, word_traits::bits),
-        minbits = AP_ALIGN((_Minbits != 0) ? _Minbits : _Maxbits, word_traits::bits),
         maxwords = maxbits / word_traits::bits,
-        minwords = minbits / word_traits::bits,
     };
 
-    int_handle(index_t capacity = minwords)
-        : words(array_alloc<word_t>(AP_CAPACITY(capacity))),
-          reg(words.get(), AP_CAPACITY(capacity), 0, false)
+private:
+    array<word_t> words;
+    wregister reg;
+
+    void normalize()
+    {
+        if (this->get_capacity() != this->maxwords)
+        {
+            this->reg.capacity = this->maxwords;
+            array_realloc(this->words, this->get_capacity());
+            this->reg.words = this->words.get();
+            this->reg.size = MIN(this->reg.capacity, this->reg.size);
+        }
+        asm_trim(this->reg);
+        if (this->reg.size == 0)
+        {
+            this->reg.sign = 0;
+        }
+    }
+
+public:
+    integer_handle()
+        : words(array_alloc<word_t>(maxwords)),
+          reg(words.get(), maxwords, 0, false)
     {
     }
 
-    template <index_t _MaxbitsO, index_t _MinbitsO>
-    int_handle(int_handle<_MaxbitsO, _MinbitsO>&& other)
+    template <index_t _MaxbitsO>
+    integer_handle(integer_handle<_MaxbitsO>&& other)
         : words(std::move(other.words)),
           reg(other.reg)
     {
-        this->set_capacity(AP_CAPACITY(this->get_capacity()));
+        this->normalize();
     }
 
-    int_handle(int_handle&& other)
+    integer_handle(integer_handle&& other)
         : words(std::move(other.words)),
           reg(other.reg)
     {
     }
 
-    template <index_t _MaxbitsO, index_t _MinbitsO>
-    int_handle(const int_handle<_MaxbitsO, _MinbitsO>& other)
-        : int_handle(other.get_capacity())
+    template <index_t _MaxbitsO>
+    integer_handle(const integer_handle<_MaxbitsO>& other) : integer_handle()
     {
         rregister other_reg = other.get_rregister();
         other_reg.size = MIN(other_reg.size, this->get_capacity());
         asm_cp(other_reg, this->reg);
         this->set_sign(other_reg.sign);
+        this->normalize();
     }
 
-    int_handle(const int_handle& other)
-        : int_handle(other.get_capacity())
+    integer_handle(const integer_handle& other) : integer_handle()
     {
         asm_cp(other.get_rregister(), this->reg);
         this->set_sign(other.reg.sign);
     }
 
-    template <index_t _MaxbitsO, index_t _MinbitsO>
-    int_handle& operator=(int_handle<_MaxbitsO, _MinbitsO>&& other)
+    template <index_t _MaxbitsO>
+    integer_handle& operator=(integer_handle<_MaxbitsO>&& other)
     {
         this->words = std::move(other.words);
         this->reg = other.reg;
-        this->set_capacity(AP_CAPACITY(this->get_capacity()));
+        this->normalize();
         return *this;
     }
 
-    int_handle& operator=(int_handle&& other)
+    integer_handle& operator=(integer_handle&& other)
     {
         if (this != &other)
         {
@@ -88,24 +99,23 @@ public:
         return *this;
     }
 
-    template <index_t _MaxbitsO, index_t _MinbitsO>
-    int_handle& operator=(const int_handle<_MaxbitsO, _MinbitsO>& other)
+    template <index_t _MaxbitsO>
+    integer_handle& operator=(const integer_handle<_MaxbitsO>& other)
     {
-        this->set_capacity(other.get_capacity());
         rregister other_reg = other.get_rregister();
         other_reg.size = MIN(other_reg.size, this->get_capacity());
         asm_cp(other_reg, this->reg);
         this->set_sign(other_reg.sign);
+        this->normalize();
         return *this;
     }
 
-    int_handle& operator=(const int_handle& other)
+    integer_handle& operator=(const integer_handle& other)
     {
         if (this != &other)
         {
-            this->set_capacity(other.get_capacity());
             asm_cp(other.get_rregister(), this->reg);
-            this->set_sign(other.reg.sign);
+            this->set_sign(other.get_sign());
         }
         return *this;
     }
@@ -143,17 +153,6 @@ public:
     index_t get_capacity() const
     {
         return this->reg.capacity;
-    }
-
-    void set_capacity(index_t capacity)
-    {
-        capacity = AP_CAPACITY(capacity);
-        if (this->reg.capacity != capacity)
-        {
-            this->reg.capacity = capacity;
-            this->reg.size = MIN(this->reg.capacity, this->reg.size);
-            this->reg.words = array_realloc<word_t>(this->words, this->reg.capacity).get();
-        }
     }
 };
 

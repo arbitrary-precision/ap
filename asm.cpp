@@ -188,7 +188,10 @@ void asm_div_short(const rregister& left, dword_t right, wregister& quo, wregist
     index_t i = left.size - 1;
 
     dword_t carry = left.words[i] % right;
-    quo.words[i] = left.words[i] / right;
+    if (i < quo.capacity)
+    {
+        quo.words[i] = left.words[i] / right;
+    }
     quo.size = MIN(left.size, quo.capacity);
 
     while (i > 0)

@@ -135,7 +135,7 @@ index_t est_quo(index_t left_size, index_t right_size)
 {
     if (left_size < right_size)
     {
-        return 0;
+        return 1;
     }
     return left_size - right_size + 1;
 }
@@ -170,7 +170,7 @@ index_t est_rsh(index_t left_size, index_t bits)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // uapi definitions.
 
-fregister uapi_fstr(wregister& out, const char* str, index_t size, index_t base, const char* digits)
+fregister uinteger_fstr(wregister& out, const char* str, index_t size, index_t base, const char* digits)
 {
     fregister flags{};
     // Arithmetic base for out.
@@ -327,7 +327,7 @@ fregister uapi_fstr(wregister& out, const char* str, index_t size, index_t base,
     return flags;
 }
 
-void uapi_tstr(const rregister& in, std::string& str, index_t base, const char* digits, bool prefix)
+void uinteger_tstr(const rregister& in, std::string& str, index_t base, const char* digits, bool prefix)
 {
     if (prefix)
     {
@@ -365,7 +365,7 @@ void uapi_tstr(const rregister& in, std::string& str, index_t base, const char* 
     }
 }
 
-fregister uapi_fbasic(wregister& out, unsigned long long basic)
+fregister uinteger_fbasic(wregister& out, unsigned long long basic)
 {
     fregister flags;
     out.size = 0;
@@ -385,7 +385,7 @@ fregister uapi_fbasic(wregister& out, unsigned long long basic)
     return flags;
 }
 
-unsigned long long uapi_tbasic(rregister in)
+unsigned long long uinteger_tbasic(rregister in)
 {
     unsigned long long result = 0;
     in.size = MIN(in.size, sizeof(result) / sizeof(word_t));
@@ -397,7 +397,7 @@ unsigned long long uapi_tbasic(rregister in)
     return result;
 }
 
-fregister uapi_scp(rregister in, wregister& out)
+fregister uinteger_scp(rregister in, wregister& out)
 {
     fregister flags;
     WRAP(in, out);
@@ -406,13 +406,13 @@ fregister uapi_scp(rregister in, wregister& out)
     return flags;
 }
 
-fregister uapi_tos(rregister in, wregister& out)
+fregister uinteger_tos(rregister in, wregister& out)
 {
-    fregister flags = uapi_scp(in, out);
+    fregister flags = uinteger_scp(in, out);
     return snorm(out, flags);
 }
 
-cmpres uapi_cmp(const rregister& left, const rregister& right)
+cmpres uinteger_cmp(const rregister& left, const rregister& right)
 {
     if (left.size > right.size)
     {
@@ -428,7 +428,7 @@ cmpres uapi_cmp(const rregister& left, const rregister& right)
     }
 }
 
-fregister uapi_add(rregister left, rregister right, wregister& out)
+fregister uinteger_add(rregister left, rregister right, wregister& out)
 {
     fregister flags;
     if (left.size < right.size)
@@ -445,12 +445,12 @@ fregister uapi_add(rregister left, rregister right, wregister& out)
     return flags;
 }
 
-fregister uapi_sub(rregister left, rregister right, wregister& out)
+fregister uinteger_sub(rregister left, rregister right, wregister& out)
 {
     fregister flags;
     WRAP(left, out);
     WRAP(right, out);
-    cmpres res = uapi_cmp(left, right);
+    cmpres res = uinteger_cmp(left, right);
 
     if (res.result == cmpres::greater)
     {
@@ -475,7 +475,7 @@ fregister uapi_sub(rregister left, rregister right, wregister& out)
     return flags;
 }
 
-fregister uapi_mul(rregister left, rregister right, wregister& out)
+fregister uinteger_mul(rregister left, rregister right, wregister& out)
 {
     fregister flags;
     // Reorder operands.
@@ -486,7 +486,7 @@ fregister uapi_mul(rregister left, rregister right, wregister& out)
     // Check if right is not zero (do not care about left after reorder)
     if (right.size == 0)
     {
-        out.size == 0;
+        out.size = 0;
         return flags;
     }
     // Check for obvious overflow.
@@ -498,25 +498,41 @@ fregister uapi_mul(rregister left, rregister right, wregister& out)
     WRAP(left, out);
     WRAP(right, out);
     // Perform actual multiplication.
+    wregister nout = out;
+    array<word_t> nout_words = array_null<word_t>();
+    nout.size = 0;
+    if ((out.words == left.words) || (out.words == right.words))
+    {
+        nout_words = array_alloc<word_t>(nout.capacity);
+        nout.words = nout_words.get();
+    }
     dword_t carry = 0;
     if (right.size == 1)
     {
-        carry = asm_mul_short(left, right.words[0], out);
+        carry = asm_mul_short(left, right.words[0], nout);
     }
     else
     {
-        carry = asm_mul(left, right, out);
+        carry = asm_mul(left, right, nout);
     }
 
     if (carry != 0)
     {
         flags.set(fregister::overflow);
     }
+    if (nout.words != out.words)
+    {
+        asm_cp(rregister(nout), out);
+    }
+    else
+    {
+        out.size = nout.size;
+    }
     asm_trim(out);
     return flags;
 }
 
-fregister uapi_div(rregister left, rregister right, wregister& quo, wregister& rem)
+fregister uinteger_div(rregister left, rregister right, wregister& quo, wregister& rem)
 {
     fregister flags;
     // Glorious zero division.
@@ -546,49 +562,51 @@ fregister uapi_div(rregister left, rregister right, wregister& quo, wregister& r
     if (left.size < right.size)
     {
         quo.size = 0;
-        return uapi_scp(left, rem);
-    }
-    // Actual division.
-    if (left.size > quo.capacity || right.size > rem.capacity)
-    {
-        // Do not wrap, bit pattern will be wrong.
-        flags |= fregister::overflow;
-    }
-    if (right.size == 1)
-    {
-        asm_div_short(left, right.words[0], quo, rem);
+        flags |= uinteger_scp(left, rem);
     }
     else
     {
-        asm_div(left, right, quo, rem);
+        // Do not wrap, bit pattern will be wrong.
+        if (left.size > quo.capacity || right.size > rem.capacity)
+        {
+            flags |= fregister::overflow;
+        }
+        if (right.size == 1)
+        {
+            asm_div_short(left, right.words[0], quo, rem);
+        }
+        else
+        {
+            asm_div(left, right, quo, rem);
+        }
     }
-    asm_trim(rem);
-    asm_trim(quo);
     if (quo_words.get() != nullptr)
     {
         quo.words = nullptr;
+        asm_trim(rem);
     }
     if (rem_words.get() != nullptr)
     {
         rem.words = nullptr;
+        asm_trim(quo);
     }
     return flags;
 }
 
-fregister uapi_quo(rregister left, rregister right, wregister& out)
+fregister uinteger_quo(rregister left, rregister right, wregister& out)
 {
     wregister rem{nullptr, 0, 0, false};
-    return uapi_div(left, right, out, rem);
+    return uinteger_div(left, right, out, rem);
 }
 
-fregister uapi_rem(rregister left, rregister right, wregister& out)
+fregister uinteger_rem(rregister left, rregister right, wregister& out)
 {
     wregister quo{nullptr, 0, 0, false};
-    return uapi_div(left, right, quo, out);
+    return uinteger_div(left, right, quo, out);
 }
 
 template <asm_bit_op op>
-fregister uapi_bit(rregister left, rregister right, wregister& out)
+fregister uinteger_bit(rregister left, rregister right, wregister& out)
 {
     fregister flags;
     WRAP(left, out);
@@ -602,22 +620,22 @@ fregister uapi_bit(rregister left, rregister right, wregister& out)
     return flags;
 }
 
-fregister uapi_and(rregister left, rregister right, wregister& out)
+fregister uinteger_and(rregister left, rregister right, wregister& out)
 {
-    return uapi_bit<asm_and>(left, right, out);
+    return uinteger_bit<asm_and>(left, right, out);
 }
 
-fregister uapi_or(rregister left, rregister right, wregister& out)
+fregister uinteger_or(rregister left, rregister right, wregister& out)
 {
-    return uapi_bit<asm_or>(left, right, out);
+    return uinteger_bit<asm_or>(left, right, out);
 }
 
-fregister uapi_xor(rregister left, rregister right, wregister& out)
+fregister uinteger_xor(rregister left, rregister right, wregister& out)
 {
-    return uapi_bit<asm_xor>(left, right, out);
+    return uinteger_bit<asm_xor>(left, right, out);
 }
 
-fregister uapi_not(rregister in, wregister& out)
+fregister uinteger_not(rregister in, wregister& out)
 {
     fregister flags;
     WRAP(in, out);
@@ -626,7 +644,7 @@ fregister uapi_not(rregister in, wregister& out)
     return flags;
 }
 
-fregister uapi_rsh(rregister in, index_t shift, wregister& out)
+fregister uinteger_rsh(rregister in, index_t shift, wregister& out)
 {
     fregister flags;
     if (in.size == 0)
@@ -653,7 +671,7 @@ fregister uapi_rsh(rregister in, index_t shift, wregister& out)
     return flags;
 }
 
-fregister uapi_lsh(rregister in, index_t shift, wregister& out)
+fregister uinteger_lsh(rregister in, index_t shift, wregister& out)
 {
     fregister flags;
     WRAP(in, out);
@@ -684,7 +702,7 @@ fregister uapi_lsh(rregister in, index_t shift, wregister& out)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // uapi definitions.
 
-fregister sapi_fstr(wregister& out, const char* str, index_t size, index_t base, const char* digits)
+fregister sinteger_fstr(wregister& out, const char* str, index_t size, index_t base, const char* digits)
 {
     // Trivial case.
     if (size == 0)
@@ -699,8 +717,8 @@ fregister sapi_fstr(wregister& out, const char* str, index_t size, index_t base,
         ++str;
         --size;
     }
-    // Convert using uapi_fstr.
-    fregister flags = uapi_fstr(out, str, size, base, digits);
+    // Convert using uinteger_fstr.
+    fregister flags = uinteger_fstr(out, str, size, base, digits);
     if (out.has_msb())
     {
         flags.set(fregister::overflow);
@@ -708,16 +726,16 @@ fregister sapi_fstr(wregister& out, const char* str, index_t size, index_t base,
     return snorm(out, flags);
 }
 
-void sapi_tstr(const rregister& in, std::string& str, index_t base, const char* digits, bool prefix)
+void sinteger_tstr(const rregister& in, std::string& str, index_t base, const char* digits, bool prefix)
 {
     if (in.sign)
     {
         str.push_back('-');
     }
-    uapi_tstr(in, str, base, digits, prefix);
+    uinteger_tstr(in, str, base, digits, prefix);
 }
 
-fregister sapi_fbasic(wregister& out, signed long long basic)
+fregister sinteger_fbasic(wregister& out, signed long long basic)
 {
     // Cast to unsigned, and obtain info about sign.
     unsigned long long ubasic = basic;
@@ -726,7 +744,7 @@ fregister sapi_fbasic(wregister& out, signed long long basic)
         out.sign = 1;
         ubasic = (~ubasic + 1);
     }
-    fregister flags = uapi_fbasic(out, ubasic);
+    fregister flags = uinteger_fbasic(out, ubasic);
     if (out.has_msb())
     {
         flags.set(fregister::overflow);
@@ -734,9 +752,9 @@ fregister sapi_fbasic(wregister& out, signed long long basic)
     return snorm(out, flags);
 }
 
-signed long long sapi_tbasic(rregister in)
+signed long long sinteger_tbasic(rregister in)
 {
-    unsigned long long result = uapi_tbasic(in);
+    unsigned long long result = uinteger_tbasic(in);
     if (in.sign)
     {
         result = ~result + 1;
@@ -744,9 +762,9 @@ signed long long sapi_tbasic(rregister in)
     return static_cast<signed long long>(result);
 }
 
-fregister sapi_scp(rregister in, wregister& out)
+fregister sinteger_scp(rregister in, wregister& out)
 {
-    fregister flags = uapi_scp(in, out);
+    fregister flags = uinteger_scp(in, out);
     out.sign = in.sign;
     if (out.has_msb())
     {
@@ -755,7 +773,7 @@ fregister sapi_scp(rregister in, wregister& out)
     return snorm(out, flags);
 }
 
-fregister sapi_tou(rregister in, wregister& out)
+fregister sinteger_tou(rregister in, wregister& out)
 {
     fregister flags;
     WRAP(in, out);
@@ -771,18 +789,36 @@ fregister sapi_tou(rregister in, wregister& out)
     return flags;
 }
 
-static inline fregister sapi_add_impl(rregister left, rregister right, wregister& out)
+cmpres sinteger_cmp(const rregister& left, const rregister& right)
 {
-    fregister flags = uapi_add(left, right, out);
+    cmpres result;
+    if (left.sign != right.sign)
+    {
+        result.result = cmpres::greater;
+    }
+    else
+    {
+        result = uinteger_cmp(left, right);
+    }
+    if (left.sign)
+    {
+        result.result = -result.result;
+    }
+    return result;
+}
+
+static inline fregister sinteger_add_impl(rregister left, rregister right, wregister& out)
+{
+    fregister flags = uinteger_add(left, right, out);
     return snorm(out, flags);
 }
 
-static inline fregister sapi_sub_impl(rregister left, rregister right, wregister& out)
+static inline fregister sinteger_sub_impl(rregister left, rregister right, wregister& out)
 {
     fregister flags;
     WRAP(left, out);
     WRAP(right, out);
-    cmpres res = uapi_cmp(left, right);
+    cmpres res = uinteger_cmp(left, right);
 
     if (res.result == cmpres::greater)
     {
@@ -806,46 +842,46 @@ static inline fregister sapi_sub_impl(rregister left, rregister right, wregister
     return snorm(out, flags);
 }
 
-fregister sapi_add(rregister left, rregister right, wregister& out)
+fregister sinteger_add(rregister left, rregister right, wregister& out)
 {
     if (left.sign == right.sign)
     {
         out.sign = left.sign;
-        return sapi_add_impl(left, right, out);
+        return sinteger_add_impl(left, right, out);
     }
     else
     {
-        return sapi_sub_impl(right, left, out);
+        return sinteger_sub_impl(right, left, out);
     }
 }
 
-fregister sapi_sub(rregister left, rregister right, wregister& out)
+fregister sinteger_sub(rregister left, rregister right, wregister& out)
 {
     out.sign = 0;
     if (left.sign != right.sign)
     {
         out.sign = left.sign;
-        return sapi_add_impl(left, right, out);
+        return sinteger_add_impl(left, right, out);
     }
     else
     {
         out.sign = 1;
-        return sapi_sub_impl(left, right, out);
+        return sinteger_sub_impl(left, right, out);
     }
 }
 
-fregister sapi_mul(rregister left, rregister right, wregister& out)
+fregister sinteger_mul(rregister left, rregister right, wregister& out)
 {
     out.sign = (left.sign != right.sign);
-    fregister flags = uapi_mul(left, right, out);
+    fregister flags = uinteger_mul(left, right, out);
     return snorm(out, flags);
 }
 
-fregister sapi_div(rregister left, rregister right, wregister& quo, wregister& rem)
+fregister sinteger_div(rregister left, rregister right, wregister& quo, wregister& rem)
 {
     quo.sign = (left.sign != right.sign);
     rem.sign = left.sign;
-    fregister flags = uapi_div(left, right, quo, rem);
+    fregister flags = uinteger_div(left, right, quo, rem);
     if (quo.words != nullptr)
     {
         flags |= snorm(quo, flags);
@@ -857,84 +893,85 @@ fregister sapi_div(rregister left, rregister right, wregister& quo, wregister& r
     return flags;
 }
 
-fregister sapi_quo(rregister left, rregister right, wregister& out)
+fregister sinteger_quo(rregister left, rregister right, wregister& out)
 {
     wregister rem{nullptr, 0, 0, false};
-    return sapi_div(left, right, out, rem);
+    return sinteger_div(left, right, out, rem);
 }
 
-fregister sapi_rem(rregister left, rregister right, wregister& out)
+fregister sinteger_rem(rregister left, rregister right, wregister& out)
 {
     wregister quo{nullptr, 0, 0, false};
-    return sapi_div(left, right, quo, out);
+    return sinteger_div(left, right, quo, out);
 }
 
 template <asm_bit_op op>
-fregister sapi_bit(rregister left, rregister right, wregister& out)
+fregister sinteger_bit(rregister left, rregister right, wregister& out)
 {
     fregister flags;
     array<word_t> left_words = array_null<word_t>();
     array<word_t> right_words = array_null<word_t>();
     if (left.sign)
     {
-        left_words = array_alloc<word_t>(left.capacity);
-        wregister wuleft{left_words.get(), left.capacity, left.size, left.sign};
-        sapi_tou(left, wuleft);
+        left_words = array_alloc<word_t>(out.capacity);
+        wregister wuleft{left_words.get(), out.capacity, left.size, left.sign};
+        sinteger_tou(left, wuleft);
         left.words = wuleft.words;
         left.size = wuleft.size;
         left.sign = 0;
     }
     if (right.sign)
     {
-        right_words = array_alloc<word_t>(right.capacity);
-        wregister wuright{right_words.get(), right.capacity, right.size, right.sign};
-        sapi_tou(right, wuright);
+        right_words = array_alloc<word_t>(out.capacity);
+        wregister wuright{right_words.get(), out.capacity, right.size, right.sign};
+        sinteger_tou(right, wuright);
         right.words = wuright.words;
         right.size = wuright.size;
         right.sign = 0;
     }
-    flags |= uapi_bit<op>(left, right, out);
-    return snorm(out, flags);
+    flags |= uinteger_bit<op>(left, right, out);
+    flags = snorm(out, flags);
+    return flags;
 }
 
-fregister sapi_and(rregister left, rregister right, wregister& out)
+fregister sinteger_and(rregister left, rregister right, wregister& out)
 {
-    return sapi_bit<asm_and>(left, right, out);
+    return sinteger_bit<asm_and>(left, right, out);
 }
 
-fregister sapi_or(rregister left, rregister right, wregister& out)
+fregister sinteger_or(rregister left, rregister right, wregister& out)
 {
-    return sapi_bit<asm_or>(left, right, out);
+    return sinteger_bit<asm_or>(left, right, out);
 }
 
-fregister sapi_xor(rregister left, rregister right, wregister& out)
+fregister sinteger_xor(rregister left, rregister right, wregister& out)
 {
-    return sapi_bit<asm_xor>(left, right, out);
+    return sinteger_bit<asm_xor>(left, right, out);
 }
 
-fregister sapi_not(rregister in, wregister& out)
+fregister sinteger_not(rregister in, wregister& out)
 {
     fregister flags;
     array<word_t> in_words = array_null<word_t>();
     if (in.sign)
     {
-        in_words = array_alloc<word_t>(in.capacity);
-        wregister wuin{in_words.get(), in.capacity, in.size, in.sign};
-        sapi_tou(in, wuin);
+        in_words = array_alloc<word_t>(out.capacity);
+        wregister wuin{in_words.get(), out.capacity, in.size, in.sign};
+        sinteger_tou(in, wuin);
         in.words = wuin.words;
         in.size = wuin.size;
-        in.sign = 0;
+        out.sign = 0;
     }
-    flags |= uapi_not(in, out);
+    flags |= uinteger_not(in, out);
     return snorm(out, flags);
 }
 
-fregister sapi_rsh(rregister in, index_t shift, wregister& out)
+fregister sinteger_rsh(rregister in, index_t shift, wregister& out)
 {
     fregister flags;
     if ((in.size == 0) || (shift == 0))
     {
-        return sapi_scp(in, out);
+        return sinteger_scp(in, out);
     }
     if (in.size > out.capacity)
     {
@@ -978,10 +1015,10 @@ fregister sapi_rsh(rregister in, index_t shift, wregister& out)
     return snorm(out, flags);
 }
 
-fregister sapi_lsh(rregister in, index_t shift, wregister& out)
+fregister sinteger_lsh(rregister in, index_t shift, wregister& out)
 {
     out.sign = in.sign;
-    fregister flags = uapi_lsh(in, shift, out);
+    fregister flags = uinteger_lsh(in, shift, out);
     return snorm(out, flags);
 }
 
