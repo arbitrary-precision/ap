@@ -10,17 +10,17 @@ namespace library
 
 #define AP_ALIGN(val, a) ((((val) + a - 1) / a) * a)
 
-template <index_t _Maxbits>
+template <index_t _bitwidth>
 class integer_handle
 {
-    template <index_t _MaxbitsO>
+    template <index_t _bitwidthO>
     friend class integer_handle;
 
 public:
     enum : index_t
     {
-        maxbits = AP_ALIGN((_Maxbits != 0) ? _Maxbits : (index_t{1} << (index_traits::bits / 2)) - 1, word_traits::bits),
-        maxwords = maxbits / word_traits::bits,
+        bitwidth = AP_ALIGN((_bitwidth != 0) ? _bitwidth : (index_t{1} << (index_traits::bits / 2)) - 1, word_traits::bits),
+        wordwidth = bitwidth / word_traits::bits,
     };
 
 private:
@@ -29,9 +29,9 @@ private:
 
     void normalize()
     {
-        if (this->get_capacity() != this->maxwords)
+        if (this->get_capacity() != this->wordwidth)
         {
-            this->reg.capacity = this->maxwords;
+            this->reg.capacity = this->wordwidth;
             array_realloc(this->words, this->get_capacity());
             this->reg.words = this->words.get();
             this->reg.size = MIN(this->reg.capacity, this->reg.size);
@@ -45,13 +45,13 @@ private:
 
 public:
     integer_handle()
-        : words(array_alloc<word_t>(maxwords)),
-          reg(words.get(), maxwords, 0, false)
+        : words(array_alloc<word_t>(wordwidth)),
+          reg(words.get(), wordwidth, 0, false)
     {
     }
 
-    template <index_t _MaxbitsO>
-    integer_handle(integer_handle<_MaxbitsO>&& other)
+    template <index_t _bitwidthO>
+    integer_handle(integer_handle<_bitwidthO>&& other)
         : words(std::move(other.words)),
           reg(other.reg)
     {
@@ -64,8 +64,8 @@ public:
     {
     }
 
-    template <index_t _MaxbitsO>
-    integer_handle(const integer_handle<_MaxbitsO>& other) : integer_handle()
+    template <index_t _bitwidthO>
+    integer_handle(const integer_handle<_bitwidthO>& other) : integer_handle()
     {
         rregister other_reg = other.get_rregister();
         other_reg.size = MIN(other_reg.size, this->get_capacity());
@@ -80,8 +80,8 @@ public:
         this->set_sign(other.reg.sign);
     }
 
-    template <index_t _MaxbitsO>
-    integer_handle& operator=(integer_handle<_MaxbitsO>&& other)
+    template <index_t _bitwidthO>
+    integer_handle& operator=(integer_handle<_bitwidthO>&& other)
     {
         this->words = std::move(other.words);
         this->reg = other.reg;
@@ -99,8 +99,8 @@ public:
         return *this;
     }
 
-    template <index_t _MaxbitsO>
-    integer_handle& operator=(const integer_handle<_MaxbitsO>& other)
+    template <index_t _bitwidthO>
+    integer_handle& operator=(const integer_handle<_bitwidthO>& other)
     {
         rregister other_reg = other.get_rregister();
         other_reg.size = MIN(other_reg.size, this->get_capacity());
