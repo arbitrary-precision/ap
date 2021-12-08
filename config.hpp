@@ -37,9 +37,9 @@
 #define AP_DWORD_SIZE sizeof(AP_DWORD)
 #endif
 
-static_assert(AP_WORD_SIZE * 2 == AP_DWORD_SIZE);
-static_assert(sizeof(AP_WORD) == AP_WORD_SIZE);
-static_assert(sizeof(AP_DWORD) == AP_DWORD_SIZE);
+static_assert(AP_WORD_SIZE * 2 == AP_DWORD_SIZE, "AP: AP_DWORD_SIZE must be twice as large as AP_WORD_SIZE");
+static_assert(sizeof(AP_WORD) == AP_WORD_SIZE, "AP: sizeof(AP_WORD) does not match AP_WORD_SIZE");
+static_assert(sizeof(AP_DWORD) == AP_DWORD_SIZE, "AP: sizeof(AP_DWORD) does not match AP_DWORD_SIZE");
 
 // Linkage.
 

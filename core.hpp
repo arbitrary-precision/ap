@@ -10,8 +10,6 @@
 
 #define LLU(a) static_cast<unsigned long long>(a)
 
-#define UNUSED(a) (void)a;
-
 namespace ap
 {
 namespace library

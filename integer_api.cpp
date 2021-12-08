@@ -4,7 +4,6 @@
 #if (DEOHAYER_AP_INT_ALG_CPP == 1) == defined(AP_USE_SOURCES)
 
 #include "asm.hpp"
-#include <iostream>
 #include <utility>
 
 namespace ap
@@ -142,7 +141,7 @@ index_t est_quo(index_t left_size, index_t right_size)
 
 index_t est_rem(index_t left_size, index_t right_size)
 {
-    UNUSED(left_size);
+    (void)left_size;
     return right_size;
 }
 
@@ -674,6 +673,10 @@ fregister uinteger_rsh(rregister in, index_t shift, wregister& out)
 fregister uinteger_lsh(rregister in, index_t shift, wregister& out)
 {
     fregister flags;
+    if (in.size == 0)
+    {
+        return uinteger_scp(in, out);
+    }
     WRAP(in, out);
     index_t wshift = shift / word_traits::bits;
     shift %= word_traits::bits;
@@ -785,6 +788,7 @@ fregister sinteger_tou(rregister in, wregister& out)
     {
         asm_cp(in, out);
     }
+    out.sign = 0;
     asm_trim(out);
     return flags;
 }
@@ -829,7 +833,10 @@ static inline fregister sinteger_sub_impl(rregister left, rregister right, wregi
     }
     else if (res.result == cmpres::less)
     {
-        out.sign += right.sign;
+        if (out.words != right.words)
+        {
+            out.sign += right.sign;
+        }
         left.size = MIN(left.size, res.size);
         right.size = res.size;
         asm_sub(right, left, out);
@@ -851,7 +858,7 @@ fregister sinteger_add(rregister left, rregister right, wregister& out)
     }
     else
     {
-        return sinteger_sub_impl(right, left, out);
+        return sinteger_sub_impl(left, right, out);
     }
 }
 
@@ -879,9 +886,9 @@ fregister sinteger_mul(rregister left, rregister right, wregister& out)
 
 fregister sinteger_div(rregister left, rregister right, wregister& quo, wregister& rem)
 {
+    fregister flags = uinteger_div(left, right, quo, rem);
     quo.sign = (left.sign != right.sign);
     rem.sign = left.sign;
-    fregister flags = uinteger_div(left, right, quo, rem);
     if (quo.words != nullptr)
     {
         flags |= snorm(quo, flags);
@@ -973,10 +980,6 @@ fregister sinteger_rsh(rregister in, index_t shift, wregister& out)
     {
         return sinteger_scp(in, out);
     }
-    if (in.size > out.capacity)
-    {
-        flags.set(fregister::overflow);
-    }
     index_t wshift = shift / word_traits::bits;
     shift %= word_traits::bits;
     out.sign = in.sign;
@@ -991,13 +994,11 @@ fregister sinteger_rsh(rregister in, index_t shift, wregister& out)
     in.words += wshift;
     word_t rem_words[1] = {0};
     rregister rem{&rem_words[0], 1, 1, false};
-    in.size = MIN(in.size, out.capacity + 1);
-    asm_rsh(in, shift, out);
     // Right shift of negative is a division by 2 with rounding "up".
     // So if at least one non-zero bit was discarded, out shall be increased by 1.
     if (in.sign)
     {
-        rem_words[0] = bool(in.words[0] & (word_traits::ones >> (word_traits::bits - shift)));
+        rem_words[0] = bool(in.words[0] & word_t(word_t(word_traits::ones << (word_traits::bits - shift)) >> (word_traits::bits - shift)));
         if (rem_words[0] == 0)
         {
             in.words -= wshift;
@@ -1009,8 +1010,11 @@ fregister sinteger_rsh(rregister in, index_t shift, wregister& out)
                     break;
                 }
             }
+            in.words += wshift;
         }
     }
+    in.size = MIN(in.size, out.capacity + 1);
+    asm_rsh(in, shift, out);
     asm_add(rregister(out), rem, out);
     return snorm(out, flags);
 }

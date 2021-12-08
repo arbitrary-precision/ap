@@ -10,17 +10,17 @@ namespace library
 
 #define AP_ALIGN(val, a) ((((val) + a - 1) / a) * a)
 
-template <index_t _bitwidth>
+template <index_t _Bitwidth>
 class integer_handle
 {
-    template <index_t _bitwidthO>
+    template <index_t _BitwidthO>
     friend class integer_handle;
 
 public:
     enum : index_t
     {
-        bitwidth = AP_ALIGN((_bitwidth != 0) ? _bitwidth : (index_t{1} << (index_traits::bits / 2)) - 1, word_traits::bits),
-        wordwidth = bitwidth / word_traits::bits,
+        bitwidth = AP_ALIGN((_Bitwidth != 0) ? _Bitwidth : (index_t{1} << (index_traits::bits / 2)) - 1, word_traits::bits),
+        wordwidth = bitwidth / word_traits::bits
     };
 
 private:
@@ -50,8 +50,8 @@ public:
     {
     }
 
-    template <index_t _bitwidthO>
-    integer_handle(integer_handle<_bitwidthO>&& other)
+    template <index_t _BitwidthO>
+    integer_handle(integer_handle<_BitwidthO>&& other)
         : words(std::move(other.words)),
           reg(other.reg)
     {
@@ -64,8 +64,8 @@ public:
     {
     }
 
-    template <index_t _bitwidthO>
-    integer_handle(const integer_handle<_bitwidthO>& other) : integer_handle()
+    template <index_t _BitwidthO>
+    integer_handle(const integer_handle<_BitwidthO>& other) : integer_handle()
     {
         rregister other_reg = other.get_rregister();
         other_reg.size = MIN(other_reg.size, this->get_capacity());
@@ -80,8 +80,8 @@ public:
         this->set_sign(other.reg.sign);
     }
 
-    template <index_t _bitwidthO>
-    integer_handle& operator=(integer_handle<_bitwidthO>&& other)
+    template <index_t _BitwidthO>
+    integer_handle& operator=(integer_handle<_BitwidthO>&& other)
     {
         this->words = std::move(other.words);
         this->reg = other.reg;
@@ -99,8 +99,8 @@ public:
         return *this;
     }
 
-    template <index_t _bitwidthO>
-    integer_handle& operator=(const integer_handle<_bitwidthO>& other)
+    template <index_t _BitwidthO>
+    integer_handle& operator=(const integer_handle<_BitwidthO>& other)
     {
         rregister other_reg = other.get_rregister();
         other_reg.size = MIN(other_reg.size, this->get_capacity());
@@ -157,7 +157,6 @@ public:
 };
 
 #undef AP_ALIGN
-#undef AP_CAPACITY
 
 } // namespace library
 } // namespace ap

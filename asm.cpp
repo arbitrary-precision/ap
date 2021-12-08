@@ -334,7 +334,7 @@ void asm_bit(const rregister& left, const rregister& right, wregister& out)
 static inline word_t bit_or(word_t a, word_t b)
 {
     return a | b;
-};
+}
 
 void asm_or(const rregister& left, const rregister& right, wregister& out)
 {
@@ -344,7 +344,7 @@ void asm_or(const rregister& left, const rregister& right, wregister& out)
 static inline word_t bit_xor(word_t a, word_t b)
 {
     return a ^ b;
-};
+}
 
 void asm_xor(const rregister& left, const rregister& right, wregister& out)
 {
@@ -354,7 +354,7 @@ void asm_xor(const rregister& left, const rregister& right, wregister& out)
 static inline word_t bit_and(word_t a, word_t b)
 {
     return a & b;
-};
+}
 
 void asm_and(const rregister& left, const rregister& right, wregister& out)
 {
