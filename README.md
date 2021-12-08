@@ -6,12 +6,6 @@ Currently it offers integer types that behave as if they are built-in int, but a
 1. Clone the repo.  
 2. include ap.hpp header.  
 3. Use either ap_int&lt;BITSIZE&gt; or ap_uint&lt;BITSIZE&gt; template type, parametrized with size in bits.
-Note: For those who are concerned, it is possible to switch compilation approach and compile .cpp files separately.</br>
-Simply define AP_USE_SOURCES before including ap.hpp, or via compiler options. However, you will have to add .cpp files to your project by yourself.</br>
-Another option is to use different types for computation and storage of long integer, define AP_WORD and AP_DWORD with unsigned types of your choice, e.g.:</br>
-`-DAP_WORD=unsigned\ char`</br>
-`-DAP_DWORD=unsigned\ short`</br>
-Note that AP_DWORD must be exactly twice as big as AP_WORD, both must be unsigned.</br>
 
 ## Interface and features
 Two types are available out of the box: </br>
@@ -33,3 +27,11 @@ The behavior is as follows:
 * Left shift by count of bytes greater than BITSIZE yields -1 for negative values, 0 in the other case.
 * Output to ostream is base-aware, so it checks for iso_base hex, dec, oct flags.
 * Hexadecimal strings are always uppercase, be it initialization or output. You can specify string "0123456789abcdef" if you want lowercase.
+
+
+Note: For those who are concerned, it is possible to switch compilation approach and compile .cpp files separately.</br>
+Simply define AP_USE_SOURCES before including ap.hpp, or via compiler options. However, you will have to add .cpp files to your project by yourself.</br>
+Another option is to use different types for computation and storage of long integer, define AP_WORD and AP_DWORD with unsigned types of your choice, e.g.:</br>
+`-DAP_WORD=unsigned\ char`</br>
+`-DAP_DWORD=unsigned\ short`</br>
+Note that AP_DWORD must be exactly twice as big as AP_WORD, both must be unsigned.</br>
