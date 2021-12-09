@@ -162,7 +162,14 @@ public:
         wregister& reg = this->handle.get_wregister();
         if (this->is_signed)
         {
-            sinteger_fbasic(reg, val);
+            if (std::is_signed<T>::value)
+            {
+                sinteger_fbasic(reg, val);
+            }
+            else
+            {
+                uinteger_fbasic(reg, val);
+            }
         }
         else
         {
