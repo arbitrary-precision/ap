@@ -20,14 +20,6 @@ namespace library
 // This is specific to signed representation only. For unsigned normalization is just asm_trim().
 static inline fregister snorm(wregister& out, fregister flags)
 {
-    if (flags.has_any(fregister::overflow))
-    {
-        if (out.sign)
-        {
-            asm_twos(rregister(out), out);
-        }
-        out.sign = 0;
-    }
     if (out.has_msb())
     {
         asm_twos(rregister(out), out);
