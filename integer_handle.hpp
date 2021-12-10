@@ -34,7 +34,7 @@ private:
             this->reg.capacity = this->wordwidth;
             array_realloc(this->words, this->get_capacity());
             this->reg.words = this->words.get();
-            this->reg.size = MIN(this->reg.capacity, this->reg.size);
+            this->reg.size = AP_MIN(this->reg.capacity, this->reg.size);
         }
         asm_trim(this->reg);
         if (this->reg.size == 0)
@@ -68,7 +68,7 @@ public:
     integer_handle(const integer_handle<_BitwidthO>& other) : integer_handle()
     {
         rregister other_reg = other.get_rregister();
-        other_reg.size = MIN(other_reg.size, this->get_capacity());
+        other_reg.size = AP_MIN(other_reg.size, this->get_capacity());
         asm_cp(other_reg, this->reg);
         this->set_sign(other_reg.sign);
         this->normalize();
@@ -103,7 +103,7 @@ public:
     integer_handle& operator=(const integer_handle<_BitwidthO>& other)
     {
         rregister other_reg = other.get_rregister();
-        other_reg.size = MIN(other_reg.size, this->get_capacity());
+        other_reg.size = AP_MIN(other_reg.size, this->get_capacity());
         asm_cp(other_reg, this->reg);
         this->set_sign(other_reg.sign);
         this->normalize();

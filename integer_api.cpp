@@ -109,7 +109,7 @@ index_t est_tstr(index_t in_size, index_t base)
 
 index_t est_add(index_t left_size, index_t right_size)
 {
-    return MAX(left_size, right_size) + 1;
+    return AP_MAX(left_size, right_size) + 1;
 }
 
 index_t est_sub(index_t left_size, index_t right_size)
@@ -139,7 +139,7 @@ index_t est_rem(index_t left_size, index_t right_size)
 
 index_t est_bit(index_t left_size, index_t right_size)
 {
-    return MAX(left_size, right_size);
+    return AP_MAX(left_size, right_size);
 }
 
 index_t est_lsh(index_t left_size, index_t bits)
@@ -299,7 +299,7 @@ fregister uinteger_fstr(wregister& out, const char* str, index_t size, index_t b
         ++nout.size;
     }
     // Copy and adjust the result.
-    out.size = MIN(nout.size, out.capacity);
+    out.size = AP_MIN(nout.size, out.capacity);
     if (out.size != nout.size)
     {
         nout.size = out.size;
@@ -379,7 +379,7 @@ fregister uinteger_fbasic(wregister& out, unsigned long long basic)
 unsigned long long uinteger_tbasic(rregister in)
 {
     unsigned long long result = 0;
-    in.size = MIN(in.size, sizeof(result) / sizeof(word_t));
+    in.size = AP_MIN(in.size, sizeof(result) / sizeof(word_t));
     for (index_t i = 0; i < in.size; ++i)
     {
         result <<= word_traits::bits;
@@ -446,13 +446,13 @@ fregister uinteger_sub(rregister left, rregister right, wregister& out)
     if (res.result == cmpres::greater)
     {
         left.size = res.size;
-        right.size = MIN(right.size, res.size);
+        right.size = AP_MIN(right.size, res.size);
         asm_sub(left, right, out);
     }
     else if (res.result == cmpres::less)
     {
         flags.set(fregister::overflow);
-        left.size = MIN(left.size, res.size);
+        left.size = AP_MIN(left.size, res.size);
         right.size = res.size;
         asm_sub(right, left, out);
         asm_twos(rregister(out), out);
@@ -656,7 +656,7 @@ fregister uinteger_rsh(rregister in, index_t shift, wregister& out)
     }
     in.size -= wshift;
     in.words += wshift;
-    in.size = MIN(in.size, out.capacity + 1);
+    in.size = AP_MIN(in.size, out.capacity + 1);
     asm_rsh(in, shift, out);
     asm_trim(out);
     return flags;
@@ -682,7 +682,7 @@ fregister uinteger_lsh(rregister in, index_t shift, wregister& out)
     aout.capacity -= wshift;
     aout.words += wshift;
     // Updeta in.size as well.
-    in.size = MIN(in.size, aout.capacity);
+    in.size = AP_MIN(in.size, aout.capacity);
     asm_lsh(in, shift, aout);
     // Set size on out correctly.
     out.size = wshift + aout.size;
@@ -820,7 +820,7 @@ static inline fregister sinteger_sub_impl(rregister left, rregister right, wregi
     {
         out.sign = left.sign;
         left.size = res.size;
-        right.size = MIN(right.size, res.size);
+        right.size = AP_MIN(right.size, res.size);
         asm_sub(left, right, out);
     }
     else if (res.result == cmpres::less)
@@ -829,7 +829,7 @@ static inline fregister sinteger_sub_impl(rregister left, rregister right, wregi
         {
             out.sign += right.sign;
         }
-        left.size = MIN(left.size, res.size);
+        left.size = AP_MIN(left.size, res.size);
         right.size = res.size;
         asm_sub(right, left, out);
     }
@@ -1005,7 +1005,7 @@ fregister sinteger_rsh(rregister in, index_t shift, wregister& out)
             in.words += wshift;
         }
     }
-    in.size = MIN(in.size, out.capacity + 1);
+    in.size = AP_MIN(in.size, out.capacity + 1);
     asm_rsh(in, shift, out);
     asm_add(rregister(out), rem, out);
     return snorm(out, flags);
