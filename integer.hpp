@@ -63,6 +63,7 @@ private:
 
     static void fregister_handler_none(fregister flags)
     {
+        AP_UNUSED(flags);
     }
 
     static void fregister_handler_div(fregister flags)
