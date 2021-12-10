@@ -196,11 +196,11 @@ public:
     {
         if (this->is_signed)
         {
-            return sinteger_tbasic(this->handle.get_rregister());
+            return static_cast<T>(sinteger_tbasic(this->handle.get_rregister()));
         }
         else
         {
-            return uinteger_tbasic(this->handle.get_rregister());
+            return static_cast<T>(uinteger_tbasic(this->handle.get_rregister()));
         }
     }
 
@@ -679,7 +679,7 @@ bool operator!=(const T& left, const ap::library::integer<_Bitwidth, _Signed>& r
     template <typename T, ap::library::index_t _Bitwidth, bool _Signed, typename std::enable_if<std::is_integral<T>::value, bool>::type = false> \
     T& operator op##=(T& left, const ap::library::integer<_Bitwidth, _Signed>& right)                                                            \
     {                                                                                                                                            \
-        left = static_cast<unsigned long long>(ap::library::integer<_Bitwidth, _Signed>(left) op right);                                         \
+        left = static_cast<T>(ap::library::integer<_Bitwidth, _Signed>(left) op right);                                                          \
         return left;                                                                                                                             \
     }
 
