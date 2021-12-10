@@ -4,11 +4,11 @@
 #include "config.hpp"
 #include <climits> // CHAR_BIT
 
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define AP_MIN(a, b) (((a) < (b)) ? (a) : (b))
 
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define AP_MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-#define LLU(a) static_cast<unsigned long long>(a)
+#define AP_LLU(a) static_cast<unsigned long long>(a)
 
 namespace ap
 {

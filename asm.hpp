@@ -92,7 +92,7 @@ ap_linkage void asm_twos(const rregister& in, wregister& out);
 // Word-wise wrapping addition of left and right.
 // Return: Carry (1 if overflow, 0 otherwise).
 // Change:
-// out.size = MIN(left.size + 1, out.capacity).
+// out.size = AP_MIN(left.size + 1, out.capacity).
 // out.words contains untrimmed wrapped two's complement pattern of the result of operation.
 // Preconditions:
 // right.size in [0, left.size].
@@ -112,7 +112,7 @@ ap_linkage void asm_sub(const rregister& left, const rregister& right, wregister
 // Word-wise wrapping long-short multiplication left by right with addition to out (long multiplication step).
 // Return: Carry of the operation, if overflow occured.
 // Change:
-// out.size = MIN(left.size + 1, out.capacity).
+// out.size = AP_MIN(left.size + 1, out.capacity).
 // out.words contains untrimmed wrapped two's complement pattern of (left * right + out).
 // Preconditions:
 // right in [0, word_traits::ones].
@@ -124,7 +124,7 @@ ap_linkage dword_t asm_mul_short(const rregister& left, dword_t right, wregister
 // Return: Carry of the operation, if overflow occured.
 // Case of an obvious overflow shall be tracked by the caller (left.size + right.size > out.capacity + 1).
 // Change:
-// out.size = MIN(left.size + right.size, out.capacity).
+// out.size = AP_MIN(left.size + right.size, out.capacity).
 // out.words contains untrimmed wrapped two's complement pattern of (left * right).
 // Preconditions:
 // Trimmed operands.
@@ -211,7 +211,7 @@ ap_linkage void asm_rsh(const rregister& in, index_t shift, wregister& out);
 // Word-wise left shift.
 // Return: None.
 // Change:
-// out.size = MIN(in.size + 1, out.capacity).
+// out.size = AP_MIN(in.size + 1, out.capacity).
 // out.words contains untrimmed wrapped two's complement pattern of (in << shift).
 // Preconditions:
 // shift in [1, word_traits::bits).

@@ -134,7 +134,7 @@ void asm_sub(const rregister& left, const rregister& right, wregister& out)
 
 dword_t asm_mul_short(const rregister& left, dword_t right, wregister& out)
 {
-    const index_t stop_index = MIN(left.size, out.capacity);
+    const index_t stop_index = AP_MIN(left.size, out.capacity);
     dword_t carry = 0;
     index_t i = 0;
 
@@ -192,7 +192,7 @@ void asm_div_short(const rregister& left, dword_t right, wregister& quo, wregist
     {
         quo.words[i] = left.words[i] / right;
     }
-    quo.size = MIN(left.size, quo.capacity);
+    quo.size = AP_MIN(left.size, quo.capacity);
 
     while (i > 0)
     {
@@ -306,7 +306,7 @@ void asm_div(const rregister& left, const rregister& right, wregister& quo, wreg
             quo.words[j] = q;
         }
     }
-    quo.size = MIN(size_diff, quo.capacity);
+    quo.size = AP_MIN(size_diff, quo.capacity);
     nleft.size = i;
     if (nleft.size != 0)
     {
