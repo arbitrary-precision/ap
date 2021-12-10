@@ -59,7 +59,7 @@ private:
 public:
     dregister() : dregister(nullptr, 0, 0, false) {}
 
-    dregister(_Words _words, index_t _capacity, index_t _size, bool _sign)
+    dregister(_Words _words, index_t _capacity, index_t _size, index_t _sign)
         : words(_words),
           capacity(_capacity),
           size(_size),
