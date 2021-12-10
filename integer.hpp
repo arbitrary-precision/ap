@@ -428,13 +428,13 @@ public:
     template <typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = false>  \
     integer op(const T& other) const                                                                \
     {                                                                                               \
-        return *this + integer(other);                                                              \
+        return this->op(integer(other));                                                            \
     }                                                                                               \
                                                                                                     \
     template <typename T, typename std::enable_if<std::is_integral<T>::value, bool>::type = false>  \
     integer& op## = (const T& other)                                                                \
     {                                                                                               \
-        return *this += integer(other);                                                             \
+        return this->op## = (integer(other));                                                       \
     }
 
     AP_BINARY_OPERATOR(add, operator+, fregister_handler_none)
