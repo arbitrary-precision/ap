@@ -266,7 +266,7 @@ fregister uinteger_fstr(wregister& out, const char* str, index_t size, index_t b
         // Case of the last division.
         if (str_j == 0)
         {
-            nout.words[nout.size] = static_cast<unsigned char>(dividend);
+            nout.words[nout.size] = static_cast<word_t>(dividend);
             ++nout.size;
             break;
         }
@@ -295,7 +295,7 @@ fregister uinteger_fstr(wregister& out, const char* str, index_t size, index_t b
         // Update size.
         raw_size = str_j;
         // dividend contains remainder of the whole division.
-        nout.words[nout.size] = static_cast<unsigned char>(dividend);
+        nout.words[nout.size] = static_cast<word_t>(dividend);
         ++nout.size;
     }
     // Copy and adjust the result.
