@@ -223,7 +223,7 @@ fregister uinteger_fstr(wregister& out, const char* str, index_t size, index_t b
             // If symbol found in digits, append its value to raw_str.
             if (str[i] == digits[j])
             {
-                raw_str[i] = j;
+                raw_str[i] = static_cast<unsigned char>(j);
 
                 break;
             }
@@ -257,7 +257,7 @@ fregister uinteger_fstr(wregister& out, const char* str, index_t size, index_t b
             dividend += raw_str[str_i];
             if (dividend >= divisor)
             {
-                raw_str[str_j] = dividend / divisor;
+                raw_str[str_j] = static_cast<unsigned char>(dividend / divisor);
                 ++str_j;
                 dividend %= divisor;
                 break;
@@ -266,7 +266,7 @@ fregister uinteger_fstr(wregister& out, const char* str, index_t size, index_t b
         // Case of the last division.
         if (str_j == 0)
         {
-            nout.words[nout.size] = dividend;
+            nout.words[nout.size] = static_cast<unsigned char>(dividend);
             ++nout.size;
             break;
         }
@@ -282,7 +282,7 @@ fregister uinteger_fstr(wregister& out, const char* str, index_t size, index_t b
             ++str_i;
             if (dividend >= divisor)
             {
-                raw_str[str_j] = dividend / divisor;
+                raw_str[str_j] = static_cast<unsigned char>(dividend / divisor);
                 ++str_j;
                 dividend %= divisor;
             }
@@ -295,7 +295,7 @@ fregister uinteger_fstr(wregister& out, const char* str, index_t size, index_t b
         // Update size.
         raw_size = str_j;
         // dividend contains remainder of the whole division.
-        nout.words[nout.size] = dividend;
+        nout.words[nout.size] = static_cast<unsigned char>(dividend);
         ++nout.size;
     }
     // Copy and adjust the result.
@@ -363,7 +363,7 @@ fregister uinteger_fbasic(wregister& out, unsigned long long basic)
     index_t i = 0;
     while ((basic != 0) && (i < out.capacity))
     {
-        out.words[i] = basic;
+        out.words[i] = static_cast<word_t>(basic);
         basic >>= word_traits::bits;
         ++i;
     }

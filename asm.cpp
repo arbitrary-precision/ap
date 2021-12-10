@@ -63,13 +63,13 @@ void asm_twos(const rregister& in, wregister& out)
     for (; i < in.size; ++i)
     {
         carry += static_cast<word_t>(~in.words[i]);
-        out.words[i] = carry;
+        out.words[i] = static_cast<word_t>(carry);
         carry >>= word_traits::bits;
     }
     for (; i < out.capacity; ++i)
     {
         carry += word_traits::ones;
-        out.words[i] = carry;
+        out.words[i] = static_cast<word_t>(carry);
         carry >>= word_traits::bits;
     }
 }
@@ -83,20 +83,20 @@ dword_t asm_add(const rregister& left, const rregister& right, wregister& out)
     {
         carry += left.words[i];
         carry += right.words[i];
-        out.words[i] = carry;
+        out.words[i] = static_cast<word_t>(carry);
         carry >>= word_traits::bits;
     }
 
     for (; i < left.size; ++i)
     {
         carry += left.words[i];
-        out.words[i] = carry;
+        out.words[i] = static_cast<word_t>(carry);
         carry >>= word_traits::bits;
     }
 
     if (out.capacity > left.size)
     {
-        out.words[i] = carry;
+        out.words[i] = static_cast<word_t>(carry);
         ++i;
         if (carry != 0)
         {
@@ -118,14 +118,14 @@ void asm_sub(const rregister& left, const rregister& right, wregister& out)
     {
         borrow = left.words[i] - borrow;
         borrow -= right.words[i];
-        out.words[i] = borrow;
+        out.words[i] = static_cast<word_t>(borrow);
         borrow >>= borrow_shift;
     }
 
     for (; i < left.size; ++i)
     {
         borrow = left.words[i] - borrow;
-        out.words[i] = borrow;
+        out.words[i] = static_cast<word_t>(borrow);
         borrow >>= borrow_shift;
     }
 
@@ -142,20 +142,20 @@ dword_t asm_mul_short(const rregister& left, dword_t right, wregister& out)
     {
         carry += out.words[i];
         carry += right * left.words[i];
-        out.words[i] = carry;
+        out.words[i] = static_cast<word_t>(carry);
         carry >>= word_traits::bits;
     }
 
     for (; i < stop_index; ++i)
     {
         carry += right * left.words[i];
-        out.words[i] = carry;
+        out.words[i] = static_cast<word_t>(carry);
         carry >>= word_traits::bits;
     }
 
     if (out.capacity > stop_index)
     {
-        out.words[i] = carry;
+        out.words[i] = static_cast<word_t>(carry);
         ++i;
         if (carry != 0)
         {
@@ -190,7 +190,7 @@ void asm_div_short(const rregister& left, dword_t right, wregister& quo, wregist
     dword_t carry = left.words[i] % right;
     if (i < quo.capacity)
     {
-        quo.words[i] = left.words[i] / right;
+        quo.words[i] = static_cast<word_t>(left.words[i] / right);
     }
     quo.size = AP_MIN(left.size, quo.capacity);
 
@@ -201,11 +201,11 @@ void asm_div_short(const rregister& left, dword_t right, wregister& quo, wregist
         carry |= left.words[i];
         if (i < quo.capacity)
         {
-            quo.words[i] = carry / right;
+            quo.words[i] = static_cast<word_t>(carry / right);
         }
         carry %= right;
     }
-    rem.words[0] = carry;
+    rem.words[0] = static_cast<word_t>(carry);
     rem.size = 1;
 }
 
@@ -274,7 +274,7 @@ void asm_div(const rregister& left, const rregister& right, wregister& quo, wreg
             borrow = nleft.words[i] - borrow;
             carry += nright.words[k] * q;
             borrow -= static_cast<word_t>(carry);
-            nleft.words[i] = borrow;
+            nleft.words[i] = static_cast<word_t>(borrow);
             borrow >>= borrow_shift;
             carry >>= (word_traits::bits);
         }
@@ -283,7 +283,7 @@ void asm_div(const rregister& left, const rregister& right, wregister& quo, wreg
         {
             if (nleft.words[i] >= borrow)
             {
-                nleft.words[i] -= borrow;
+                nleft.words[i] -= static_cast<word_t>(borrow);
             }
             else // unlikely
             {
@@ -294,16 +294,16 @@ void asm_div(const rregister& left, const rregister& right, wregister& quo, wreg
                 {
                     carry += nleft.words[i];
                     carry += nright.words[k];
-                    nleft.words[i] = carry;
+                    nleft.words[i] = static_cast<word_t>(carry);
                     carry >>= word_traits::bits;
                 }
-                nleft.words[i] += carry;
-                nleft.words[i] -= borrow;
+                nleft.words[i] += static_cast<word_t>(carry);
+                nleft.words[i] -= static_cast<word_t>(borrow);
             }
         }
         if (j < quo.capacity)
         {
-            quo.words[j] = q;
+            quo.words[j] = static_cast<word_t>(q);
         }
     }
     quo.size = AP_MIN(size_diff, quo.capacity);
@@ -380,12 +380,12 @@ void asm_rsh(const rregister& in, index_t shift, wregister& out)
     for (index_t i = 1; i < in.size; ++i)
     {
         dword |= (dword_t{in.words[i]} << word_traits::bits);
-        out.words[i - 1] = (dword >> shift);
+        out.words[i - 1] = static_cast<word_t>(dword >> shift);
         dword >>= word_traits::bits;
     }
     if (out.capacity >= in.size)
     {
-        out.words[in.size - 1] = (dword >> shift);
+        out.words[in.size - 1] = static_cast<word_t>(dword >> shift);
         out.size = in.size;
     }
     else
@@ -403,14 +403,14 @@ void asm_lsh(const rregister& in, index_t shift, wregister& out)
     for (index_t i = 1; i < in.size; ++i)
     {
         dword |= (dword_t{in.words[i]} << word_traits::bits);
-        out.words[i] = (dword >> shift);
+        out.words[i] = static_cast<word_t>(dword >> shift);
         dword >>= word_traits::bits;
     }
     out.words[0] = first;
     out.size = in.size;
     if (out.capacity > in.size)
     {
-        out.words[in.size] = (dword >> shift);
+        out.words[in.size] = static_cast<word_t>(dword >> shift);
         ++out.size;
     }
 }
