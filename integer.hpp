@@ -379,7 +379,7 @@ public:
         return this->cmp(integer(other));
     }
 
-    template <typename T, typename std::enable_if<T::valuewidth, bool>::type = false>
+    template <typename T, typename std::enable_if<bool(T::valuewidth), bool>::type = false>
     int cmp(const T& other) const
     {
         if (_Signed != bool(other.is_signed))
@@ -410,7 +410,7 @@ public:
     // ordinary binary operators
 
 #define AP_BINARY_OPERATOR(name, op, fhandler)                                                      \
-    template <typename T, typename std::enable_if<T::valuewidth, bool>::type = false>               \
+    template <typename T, typename std::enable_if<bool(T::valuewidth), bool>::type = false>         \
     wider_int_t<integer<_Bitwidth, _Signed>, T> op(const T& other) const                            \
     {                                                                                               \
         wider_int_t<integer<_Bitwidth, _Signed>, T> result;                                         \
@@ -418,7 +418,7 @@ public:
         return result;                                                                              \
     }                                                                                               \
                                                                                                     \
-    template <typename T, typename std::enable_if<T::valuewidth, bool>::type = false>               \
+    template <typename T, typename std::enable_if<bool(T::valuewidth), bool>::type = false>         \
     integer& op## = (const T& other)                                                                \
     {                                                                                               \
         this->dispatch_binary_operation<uinteger_##name, sinteger_##name, fhandler>(other, *this);  \
