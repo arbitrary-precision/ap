@@ -15,7 +15,7 @@
 #endif
 
 #ifndef AP_SIZE
-#define AP_SIZE unsigned long long
+#define AP_SIZE decltype(sizeof(0))
 #endif
 
 // Linkage.
